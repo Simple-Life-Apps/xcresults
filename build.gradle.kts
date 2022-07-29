@@ -1,6 +1,6 @@
 plugins {
     java
-    id("com.palantir.graal") version("0.6.0")
+    id("com.palantir.graal") version("0.9.0")
 }
 
 group = "org.example"
@@ -9,7 +9,14 @@ version = "1.0-SNAPSHOT"
 description = "Allure Server Java Client"
 
 tasks.withType(Wrapper::class) {
-    gradleVersion = "6.1.1"
+    gradleVersion = "7.4"
+}
+
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(8))
+    }
 }
 
 graal {
