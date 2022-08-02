@@ -37,6 +37,8 @@ dependencies {
     implementation("io.qameta.allure:allure-model:2.13.1")
     implementation("info.picocli:picocli:4.1.4")
     implementation("commons-io:commons-io:2.6")
+    implementation("com.googlecode.json-simple:json-simple:1.1.1")
+
 
     testImplementation("junit:junit:4.12")
 }

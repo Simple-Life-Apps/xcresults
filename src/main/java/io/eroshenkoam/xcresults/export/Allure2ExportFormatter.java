@@ -10,6 +10,8 @@ import io.qameta.allure.model.StatusDetails;
 import io.qameta.allure.model.StepResult;
 import io.qameta.allure.model.TestResult;
 import org.apache.commons.io.FilenameUtils;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -18,6 +20,14 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.ParseException;
 
 import static io.eroshenkoam.xcresults.export.ExportCommand.FILE_EXTENSION_HEIC;
 import static io.eroshenkoam.xcresults.util.ParseUtil.parseDate;
@@ -45,6 +55,8 @@ public class Allure2ExportFormatter implements ExportFormatter {
     private static final String VALUES = "_values";
 
     private static final String SUITE = "suite";
+
+    private Set<String> appSpecificActivitiesPrefixesToExclude = null;
 
     @Override
     public TestResult format(final ExportMeta meta, final JsonNode node) {
@@ -94,6 +106,44 @@ public class Allure2ExportFormatter implements ExportFormatter {
         return result;
     }
 
+    private String[] getStringArray(JSONArray jsonArray) {
+        String[] stringArray = null;
+        if (jsonArray != null) {
+            int size = jsonArray.size();
+
+            List<String> stringList = new ArrayList<String>();
+            for (int i = 0; i < size; i++) {
+                stringList.add((String)jsonArray.get(i));
+            }
+
+            stringArray = stringList.toArray(new String[size]);
+        }
+        return stringArray;
+    }
+
+    private Set<String> getExculdePrefixes() {
+        if (appSpecificActivitiesPrefixesToExclude == null) {
+            JSONParser parser = new JSONParser();
+            try {
+            JSONArray excludeRules = (JSONArray) parser.parse(new FileReader(System.getProperty("user.dir") + "/excludeRules.json"));
+
+            String[] excludeRulesArray = getStringArray(excludeRules);
+
+            appSpecificActivitiesPrefixesToExclude = Arrays.stream(excludeRulesArray).collect(Collectors.toSet());
+            } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
+            return appSpecificActivitiesPrefixesToExclude;
+        } else {
+            return appSpecificActivitiesPrefixesToExclude;
+        }
+
+    }
+
     @SuppressWarnings("PMD.NcssCount")
     private void parseStep(final JsonNode activity,
                            final StepContext context) {
@@ -102,6 +152,14 @@ public class Allure2ExportFormatter implements ExportFormatter {
             return;
         }
         final String activityTitle = title.get();
+
+        if (getExculdePrefixes().contains(activityTitle)) {
+            return;
+        }
+
+        if (getExculdePrefixes().stream().anyMatch(activityTitle::startsWith)) {
+            return;
+        }
 
         final Matcher idMatcher = Pattern.compile("allure\\.id:(?<id>.*)")
                 .matcher(activityTitle);
