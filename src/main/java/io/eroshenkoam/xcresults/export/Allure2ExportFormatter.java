@@ -125,7 +125,7 @@ public class Allure2ExportFormatter implements ExportFormatter {
         if (appSpecificActivitiesPrefixesToExclude == null) {
             JSONParser parser = new JSONParser();
             try {
-            JSONArray excludeRules = (JSONArray) parser.parse(new FileReader(System.getProperty("user.dir") + "/excludeRules.json"));
+            JSONArray excludeRules = (JSONArray) parser.parse(new FileReader("excludeRules.json"));
 
             String[] excludeRulesArray = getStringArray(excludeRules);
 
@@ -152,10 +152,6 @@ public class Allure2ExportFormatter implements ExportFormatter {
             return;
         }
         final String activityTitle = title.get();
-
-        if (getExculdePrefixes().contains(activityTitle)) {
-            return;
-        }
 
         if (getExculdePrefixes().stream().anyMatch(activityTitle::startsWith)) {
             return;
