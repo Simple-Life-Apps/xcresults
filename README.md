@@ -10,9 +10,9 @@ Build binary with command
 
 ## Usage
 
-put file named excludeRules.json near the binary
+Put a file named excludeRules.json near the binary
 
-example of excludeRules.json:
+Example of excludeRules.json:
 
 ```
 [
