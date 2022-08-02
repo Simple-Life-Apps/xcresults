@@ -11,6 +11,7 @@ import io.qameta.allure.model.StepResult;
 import io.qameta.allure.model.TestResult;
 import org.apache.commons.io.FilenameUtils;
 import java.util.*;
+import java.io.File;
 import java.util.stream.Collectors;
 
 import java.util.ArrayList;
@@ -125,7 +126,16 @@ public class Allure2ExportFormatter implements ExportFormatter {
         if (appSpecificActivitiesPrefixesToExclude == null) {
             JSONParser parser = new JSONParser();
             try {
-            JSONArray excludeRules = (JSONArray) parser.parse(new FileReader("excludeRules.json"));
+
+            File executableFile = new File(getClass()
+                            .getProtectionDomain()
+                            .getCodeSource()
+                            .getLocation()
+                            .getPath());
+
+            String executableFolder = executableFile.getParent();
+
+            JSONArray excludeRules = (JSONArray) parser.parse(new FileReader(String.format("%s/excludeRules.json", executableFolder)));
 
             String[] excludeRulesArray = getStringArray(excludeRules);
 
