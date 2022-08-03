@@ -57,7 +57,17 @@ public class Allure2ExportFormatter implements ExportFormatter {
 
     private static final String SUITE = "suite";
 
-    private Set<String> appSpecificActivitiesPrefixesToExclude = null;
+    private class ExcludeRules {
+        Set<String> appSpecificActivitiesPrefixesToExclude;
+        Set<String> appSpecificActivitiesStringsToExclude;
+
+        ExcludeRules(Set<String> appSpecificActivitiesPrefixesToExclude, Set<String> appSpecificActivitiesStringsToExclude) {
+            this.appSpecificActivitiesPrefixesToExclude = appSpecificActivitiesPrefixesToExclude;
+            this.appSpecificActivitiesStringsToExclude = appSpecificActivitiesStringsToExclude;
+        }
+    }
+
+    private ExcludeRules excludeRules = null;
 
     @Override
     public TestResult format(final ExportMeta meta, final JsonNode node) {
@@ -122,7 +132,7 @@ public class Allure2ExportFormatter implements ExportFormatter {
         return stringArray;
     }
 
-    private Set<String> getExculdePrefixes() {
+    private ExcludeRules getExculdePrefixes() {
         if (appSpecificActivitiesPrefixesToExclude == null) {
             JSONParser parser = new JSONParser();
             try {
@@ -135,11 +145,16 @@ public class Allure2ExportFormatter implements ExportFormatter {
 
             String executableFolder = executableFile.getParent();
 
-            JSONArray excludeRules = (JSONArray) parser.parse(new FileReader(String.format("%s/excludeRules.json", executableFolder)));
+            JSONObject excludeRulesJSON = (JSONObject) parser.parse(new FileReader(String.format("%s/excludeRules.json", executableFolder)));
 
-            String[] excludeRulesArray = getStringArray(excludeRules);
+            String[] excludePerefixesArray = getStringArray(excludeRulesJSON.getJSONArray("excluded_prefixes"));
+            String[] excludeStringsArray = getStringArray(excludeRulesJSON.getJSONArray("excluded_strings"));
 
-            appSpecificActivitiesPrefixesToExclude = Arrays.stream(excludeRulesArray).collect(Collectors.toSet());
+            excludeRules = new ExcludeRules(
+                Arrays.stream(excludePerefixesArray).collect(Collectors.toSet()),
+                Arrays.stream(excludeStringsArray).collect(Collectors.toSet())
+                );
+
             } catch (FileNotFoundException e) {
             e.printStackTrace();
             } catch (IOException e) {
@@ -147,9 +162,9 @@ public class Allure2ExportFormatter implements ExportFormatter {
             } catch (ParseException e) {
                 e.printStackTrace();
             }
-            return appSpecificActivitiesPrefixesToExclude;
+            return excludeRules;
         } else {
-            return appSpecificActivitiesPrefixesToExclude;
+            return excludeRules;
         }
 
     }
@@ -163,7 +178,11 @@ public class Allure2ExportFormatter implements ExportFormatter {
         }
         final String activityTitle = title.get();
 
-        if (getExculdePrefixes().stream().anyMatch(activityTitle::startsWith)) {
+        if (getExculdePrefixes().excludeRules.appSpecificActivitiesStringsToExclude.contains(activityTitle)) {
+            return;
+        }
+
+        if (getExculdePrefixes().excludeRules.appSpecificActivitiesPrefixesToExclude.stream().anyMatch(activityTitle::startsWith)) {
             return;
         }
 

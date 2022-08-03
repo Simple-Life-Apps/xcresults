@@ -15,21 +15,26 @@ Put a file named excludeRules.json near the binary
 Example of excludeRules.json:
 
 ```
-[
-   "Get all elements",
-   "Some attachments were deleted",
-   "Some screenshots were deleted ",
-   "Added attachment ",
-   "Get all elements bound by index for:",
-   "Checking `",
-   "Find the ",
-   "Tap \"",
-   "Check for interrupting",
-   "Waiting ",
-   "Swipe down \"",
-   "Press \"",
-   "Checking existence of "
-]
+{
+   "excluded_prefixes":[
+      "Get all elements",
+      "Some attachments were deleted",
+      "Some screenshots were deleted ",
+      "Added attachment ",
+      "Get all elements bound by index for:",
+      "Checking `",
+      "Find the ",
+      "Tap \"",
+      "Check for interrupting",
+      "Waiting ",
+      "Swipe down \"",
+      "Press \"",
+      "Checking existence of "
+   ],
+   "excluded_strings":[
+
+   ]
+}
 ```
 
 `xcresults <command> <options>`
