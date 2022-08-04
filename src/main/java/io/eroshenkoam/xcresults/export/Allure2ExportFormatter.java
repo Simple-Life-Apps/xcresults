@@ -123,8 +123,8 @@ public class Allure2ExportFormatter implements ExportFormatter {
             int size = jsonArray.size();
 
             List<String> stringList = new ArrayList<String>();
-            for (int i = 0; i < size; i++) {
-                stringList.add((String)jsonArray.get(i));
+            for (Object o : jsonArray) {
+                stringList.add((String) o);
             }
 
             stringArray = stringList.toArray(new String[size]);
@@ -132,40 +132,34 @@ public class Allure2ExportFormatter implements ExportFormatter {
         return stringArray;
     }
 
-    private ExcludeRules getExculdePrefixes() {
-        if (appSpecificActivitiesPrefixesToExclude == null) {
+    private ExcludeRules getExcludePrefixes() {
+        if (excludeRules == null) {
             JSONParser parser = new JSONParser();
             try {
 
-            File executableFile = new File(getClass()
-                            .getProtectionDomain()
-                            .getCodeSource()
-                            .getLocation()
-                            .getPath());
+                File executableFile = new File(getClass()
+                        .getProtectionDomain()
+                        .getCodeSource()
+                        .getLocation()
+                        .getPath());
 
-            String executableFolder = executableFile.getParent();
+                String executableFolder = executableFile.getParent();
 
-            JSONObject excludeRulesJSON = (JSONObject) parser.parse(new FileReader(String.format("%s/excludeRules.json", executableFolder)));
+                JSONObject excludeRulesJSON = (JSONObject) parser.parse(new FileReader(String.format("%s/excludeRules.json", executableFolder)));
 
-            String[] excludePerefixesArray = getStringArray(excludeRulesJSON.getJSONArray("excluded_prefixes"));
-            String[] excludeStringsArray = getStringArray(excludeRulesJSON.getJSONArray("excluded_strings"));
+                String[] excludePerefixesArray = getStringArray((JSONArray) excludeRulesJSON.get("excluded_prefixes"));
+                String[] excludeStringsArray = getStringArray((JSONArray) excludeRulesJSON.get("excluded_prefixes"));
 
-            excludeRules = new ExcludeRules(
-                Arrays.stream(excludePerefixesArray).collect(Collectors.toSet()),
-                Arrays.stream(excludeStringsArray).collect(Collectors.toSet())
+                excludeRules = new ExcludeRules(
+                        Arrays.stream(excludePerefixesArray).collect(Collectors.toSet()),
+                        Arrays.stream(excludeStringsArray).collect(Collectors.toSet())
                 );
 
-            } catch (FileNotFoundException e) {
-            e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
-            } catch (ParseException e) {
+            } catch (IOException | ParseException e) {
                 e.printStackTrace();
             }
-            return excludeRules;
-        } else {
-            return excludeRules;
         }
+        return excludeRules;
 
     }
 
@@ -178,11 +172,11 @@ public class Allure2ExportFormatter implements ExportFormatter {
         }
         final String activityTitle = title.get();
 
-        if (getExculdePrefixes().excludeRules.appSpecificActivitiesStringsToExclude.contains(activityTitle)) {
+        if (getExcludePrefixes().appSpecificActivitiesStringsToExclude.contains(activityTitle)) {
             return;
         }
 
-        if (getExculdePrefixes().excludeRules.appSpecificActivitiesPrefixesToExclude.stream().anyMatch(activityTitle::startsWith)) {
+        if (getExcludePrefixes().appSpecificActivitiesPrefixesToExclude.stream().anyMatch(activityTitle::startsWith)) {
             return;
         }
 
