@@ -40,6 +40,7 @@ public class ExportCommand implements Runnable {
     private static final String TESTS = "tests";
     private static final String SUBTESTS = "subtests";
 
+    private static final String FAILURE_SUMMARIES = "failureSummaries";
     private static final String ACTIVITY_SUMMARIES = "activitySummaries";
     private static final String SUBACTIVITIES = "subactivities";
 
@@ -120,10 +121,14 @@ public class ExportCommand implements Runnable {
             for (JsonNode summary : testRef.get(SUMMARIES).get(VALUES)) {
                 for (JsonNode testableSummary : summary.get(TESTABLE_SUMMARIES).get(VALUES)) {
                     final ExportMeta testMeta = getTestMeta(meta, testableSummary);
-                    for (JsonNode test : testableSummary.get(TESTS).get(VALUES)) {
-                        getTestSummaries(test).forEach(testSummary -> {
-                            testSummaries.put(testSummary, testMeta);
-                        });
+                    if (testableSummary.has(TESTS) && testableSummary.get(TESTS).has(VALUES)) {
+                        for (JsonNode test : testableSummary.get(TESTS).get(VALUES)) {
+                            getTestSummaries(test).forEach(testSummary -> {
+                                testSummaries.put(testSummary, testMeta);
+                            });
+                        }
+                    } else {
+                        System.out.printf("No tests found for '%s'%n", testableSummary.get("name").get(VALUE));
                     }
                 }
             }
@@ -136,6 +141,11 @@ public class ExportCommand implements Runnable {
             if (testSummary.has(ACTIVITY_SUMMARIES)) {
                 for (final JsonNode activity : testSummary.get(ACTIVITY_SUMMARIES).get(VALUES)) {
                     attachmentsRefs.putAll(getAttachmentRefs(activity));
+                }
+            }
+            if (testSummary.has(FAILURE_SUMMARIES)) {
+                for (final JsonNode failure : testSummary.get(FAILURE_SUMMARIES).get(VALUES)) {
+                    attachmentsRefs.putAll(getAttachmentRefs(failure));
                 }
             }
         });
