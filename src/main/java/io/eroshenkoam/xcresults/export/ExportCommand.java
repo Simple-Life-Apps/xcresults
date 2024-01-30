@@ -3,6 +3,8 @@ package io.eroshenkoam.xcresults.export;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import io.qameta.allure.model.Label;
+import io.qameta.allure.model.TestResult;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import picocli.CommandLine;
@@ -62,6 +64,8 @@ public class ExportCommand implements Runnable {
     private static final String TARGET_NAME = "targetName";
 
     private static final String TEST_REF = "testsRef";
+
+    private static final String AS_ID = "AS_ID";
 
     private final ObjectMapper mapper = new ObjectMapper()
             .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
@@ -168,19 +172,54 @@ public class ExportCommand implements Runnable {
     private void exportTestSummary(final ExportMeta meta, final JsonNode testSummary) {
         Path testSummaryPath = null;
         Object formattedResult = null;
-        final String uuid = UUID.randomUUID().toString();
         switch (format) {
             case json: {
+                final String uuid = UUID.randomUUID().toString();
                 final String testSummaryFilename = String.format("%s.json", uuid);
                 testSummaryPath = outputPath.resolve(testSummaryFilename);
                 formattedResult = new JsonExportFormatter().format(meta, testSummary);
                 break;
             }
             case allure2: {
-                final String testSummaryFilename = String.format("%s-result.json", uuid);
-                testSummaryPath = outputPath.resolve(testSummaryFilename);
-                formattedResult = new Allure2ExportFormatter().format(meta, testSummary);
-                break;
+                final TestResult testResult = new Allure2ExportFormatter().format(meta, testSummary);
+
+                final List<String> asIDs = new ArrayList<>();
+                for (final Label label : testResult.getLabels()) {
+                    if (Objects.equals(label.getName(), AS_ID)) {
+                        asIDs.add(label.getValue());
+                    }
+                }
+                if (asIDs.size() <= 1) {
+                    final String uuid = UUID.randomUUID().toString();
+                    final String testSummaryFilename = String.format("%s-result.json", uuid);
+                    testSummaryPath = outputPath.resolve(testSummaryFilename);
+                    formattedResult = testResult;
+                    break;
+                }
+
+                for (final String asID : asIDs) {
+                    final TestResult splitTestResult = new Allure2ExportFormatter().format(meta, testSummary);
+                    final List<Label> labels = new ArrayList<>();
+                    for (final Label label : testResult.getLabels()) {
+                        if (Objects.equals(label.getName(), AS_ID) && !Objects.equals(label.getValue(), asID)) {
+                            continue;
+                        }
+                        labels.add(label);
+                    }
+                    splitTestResult.setLabels(labels);
+
+                    final String uuid = UUID.randomUUID().toString();
+                    final String testSummaryFilename = String.format("%s-result.json", uuid);
+                    testSummaryPath = outputPath.resolve(testSummaryFilename);
+                    formattedResult = splitTestResult;
+
+                    try {
+                        mapper.writeValue(testSummaryPath.toFile(), formattedResult);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                return;
             }
         }
         try {
