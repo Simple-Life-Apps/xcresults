@@ -6,7 +6,11 @@ A command line tool to extract test summaries & screenshots from Xcode 11 XCResu
 
 Build binary with command
 
-`./gradlew clean nativeImage`
+`./gradlew clean nativeCompile`
+
+If it cannot find GraalVM, install it with command
+
+`brew install graalvm-jdk`
 
 ## Usage
 
