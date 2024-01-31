@@ -10,6 +10,8 @@ import io.qameta.allure.model.StatusDetails;
 import io.qameta.allure.model.StepResult;
 import io.qameta.allure.model.TestResult;
 import org.apache.commons.io.FilenameUtils;
+
+import java.nio.file.Path;
 import java.util.*;
 import java.io.File;
 import java.util.stream.Collectors;
@@ -86,6 +88,7 @@ public class Allure2ExportFormatter implements ExportFormatter {
     }
 
     private ExcludeRules excludeRules = null;
+    private Path excludedRulesPath = null;
 
     @Override
     public TestResult format(final ExportMeta meta, final JsonNode node) {
@@ -168,26 +171,37 @@ public class Allure2ExportFormatter implements ExportFormatter {
         return stringArray;
     }
 
+    public Allure2ExportFormatter withExcludedRulesPath(Path excludedRulesPath) {
+        this.excludedRulesPath = excludedRulesPath;
+        return this;
+    }
+
     private ExcludeRules getExcludePrefixes() {
         if (excludeRules == null) {
             JSONParser parser = new JSONParser();
             try {
+                FileReader fileReader;
 
-                File executableFile = new File(getClass()
-                        .getProtectionDomain()
-                        .getCodeSource()
-                        .getLocation()
-                        .getPath());
+                if (excludedRulesPath != null) {
+                    fileReader = new FileReader(excludedRulesPath.toFile());
+                } else {
+                    File executableFile = new File(getClass()
+                            .getProtectionDomain()
+                            .getCodeSource()
+                            .getLocation()
+                            .getPath());
 
-                String executableFolder = executableFile.getParent();
+                    String executableFolder = executableFile.getParent();
+                    fileReader = new FileReader(String.format("%s/excludeRules.json", executableFolder));
+                }
 
-                JSONObject excludeRulesJSON = (JSONObject) parser.parse(new FileReader(String.format("%s/excludeRules.json", executableFolder)));
+                JSONObject excludeRulesJSON = (JSONObject) parser.parse(fileReader);
 
-                String[] excludePerefixesArray = getStringArray((JSONArray) excludeRulesJSON.get("excluded_prefixes"));
+                String[] excludePrefixesArray = getStringArray((JSONArray) excludeRulesJSON.get("excluded_prefixes"));
                 String[] excludeStringsArray = getStringArray((JSONArray) excludeRulesJSON.get("excluded_prefixes"));
 
                 excludeRules = new ExcludeRules(
-                        Arrays.stream(excludePerefixesArray).collect(Collectors.toSet()),
+                        Arrays.stream(excludePrefixesArray).collect(Collectors.toSet()),
                         Arrays.stream(excludeStringsArray).collect(Collectors.toSet())
                 );
 

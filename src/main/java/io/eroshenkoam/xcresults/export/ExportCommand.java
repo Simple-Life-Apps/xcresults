@@ -86,6 +86,12 @@ public class ExportCommand implements Runnable {
     )
     private String carouselTemplatePath;
 
+    @CommandLine.Option(
+            names = {"--excluded"},
+            description = "Excluded rules (ex: excludeRules.json)"
+    )
+    private Path excludedRulesPath;
+
     @CommandLine.Parameters(
             index = "0",
             description = "The directories with *.xcresults"
@@ -154,8 +160,9 @@ public class ExportCommand implements Runnable {
         for (final Map.Entry<JsonNode, ExportMeta> entry : testSummaries.entrySet()) {
             final JsonNode testSummary = entry.getKey();
             final ExportMeta meta = entry.getValue();
+            final Allure2ExportFormatter formatter = new Allure2ExportFormatter().withExcludedRulesPath(excludedRulesPath);
 
-            final TestResult testResult = new Allure2ExportFormatter().format(meta, testSummary);
+            final TestResult testResult = formatter.format(meta, testSummary);
 
             final List<String> asIDs = new ArrayList<>();
             for (final Label label : testResult.getLabels()) {
@@ -169,7 +176,7 @@ public class ExportCommand implements Runnable {
                 testResults.put(testSummaryPath, testResult);
             } else {
                 for (final String asID : asIDs) {
-                    final TestResult splitTestResult = new Allure2ExportFormatter().format(meta, testSummary);
+                    final TestResult splitTestResult = formatter.format(meta, testSummary);
                     final List<Label> labels = new ArrayList<>();
                     for (final Label label : splitTestResult.getLabels()) {
                         if (Objects.equals(label.getName(), AS_ID) && !Objects.equals(label.getValue(), asID)) {
