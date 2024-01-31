@@ -1,6 +1,6 @@
 plugins {
     java
-    id("com.palantir.graal") version("0.12.0")
+    id("org.graalvm.buildtools.native") version "0.9.24"
 }
 
 group = "org.example"
@@ -9,9 +9,8 @@ version = "1.0-SNAPSHOT"
 description = "Allure Server Java Client"
 
 tasks.withType(Wrapper::class) {
-    gradleVersion = "7.5"
+    gradleVersion = "7.5.1"
 }
-
 
 java {
     toolchain {
@@ -19,12 +18,17 @@ java {
     }
 }
 
-graal {
-    graalVersion(project.property("graalVersion") as String?)
-    javaVersion("11")
+tasks.withType(JavaCompile::class) {
+    options.encoding = "UTF-8"
+}
 
-    mainClass("io.eroshenkoam.xcresults.XCResults")
-    outputName("xcresults")
+graalvmNative {
+    toolchainDetection.set(true)
+    binaries {
+        named("main") {
+            mainClass.set("io.eroshenkoam.xcresults.XCResults")
+        }
+    }
 }
 
 repositories {
@@ -36,6 +40,7 @@ dependencies {
 
     implementation("com.fasterxml.jackson.core:jackson-databind:2.13.4.2")
     implementation("io.qameta.allure:allure-model:2.13.1")
+    implementation("org.freemarker:freemarker:2.3.32")
     implementation("info.picocli:picocli:4.1.4")
     implementation("commons-io:commons-io:2.6")
     implementation("com.googlecode.json-simple:json-simple:1.1.1")
