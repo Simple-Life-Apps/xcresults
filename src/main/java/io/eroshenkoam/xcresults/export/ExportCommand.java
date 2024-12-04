@@ -33,6 +33,12 @@ public class ExportCommand implements Runnable {
     )
     private String carouselTemplatePath;
 
+    @CommandLine.Option(
+            names = {"--excluded"},
+            description = "Excluded rules (ex: excludeRules.json)"
+    )
+    private Path excludedRulesPath;
+
     @CommandLine.Parameters(
             description = "The directories with *.xcresults"
     )
@@ -69,7 +75,7 @@ public class ExportCommand implements Runnable {
     private void runUnsafe(final Path input, final Path output) throws Exception  {
         System.out.printf("Export xcresults from [%s] to [%s]\n", input, output);
         final ExportProcessor processor = new ExportProcessor(
-                input, output, addCarouselAttachment, carouselTemplatePath
+                input, output, addCarouselAttachment, carouselTemplatePath, excludedRulesPath
         );
         processor.export();
     }

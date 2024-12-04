@@ -5,6 +5,14 @@
 
 ## Installation
 
+Build binary with command
+
+`./gradlew clean nativeCompile`
+
+If it cannot find GraalVM, install it with command
+
+`brew install graalvm-jdk`
+
 ### For M1 CPU (arm64)
 
 1. Download the executable file:
@@ -28,6 +36,32 @@
    ```
 
 ## Usage
+
+Put a file named excludeRules.json near the binary and add option --excluded=path/to/excludeRules.json:
+
+Example of excludeRules.json:
+
+```
+{
+   "excluded_prefixes":[
+      "Get all elements",
+      "Some attachments were deleted",
+      "Some screenshots were deleted ",
+      "Added attachment ",
+      "Get all elements bound by index for:",
+      "Checking `",
+      "Find the ",
+      "Tap \"",
+      "Check for interrupting",
+      "Waiting ",
+      "Swipe down \"",
+      "Press \"",
+      "Checking existence of "
+   ],
+   "excluded_strings":[
+   ]
+}
+```
 
 The general command format:
 ```bash

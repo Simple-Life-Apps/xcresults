@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import freemarker.template.Version;
 import io.eroshenkoam.xcresults.carousel.CarouselPostProcessor;
+import io.qameta.allure.model.Label;
 import io.qameta.allure.model.ExecutableItem;
 import io.qameta.allure.model.TestResult;
 import org.apache.commons.io.FileUtils;
@@ -61,6 +62,8 @@ public class ExportProcessor {
 
     private static final String TEST_REF = "testsRef";
 
+    private static final String AS_ID = "AS_ID";
+
     private final ObjectMapper mapper = new ObjectMapper()
             .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
 
@@ -69,16 +72,19 @@ public class ExportProcessor {
 
     private Boolean addCarouselAttachment;
     private String carouselTemplatePath;
+    private final Path excludedRulesPath;
 
 
     public ExportProcessor(final Path inputPath,
                            final Path outputPath,
                            final Boolean addCarouselAttachment,
-                           final String carouselTemplatePath) {
+                           final String carouselTemplatePath,
+                           final Path excludedRulesPath) {
         this.inputPath = inputPath;
         this.outputPath = outputPath;
         this.addCarouselAttachment = addCarouselAttachment;
         this.carouselTemplatePath = carouselTemplatePath;
+        this.excludedRulesPath = excludedRulesPath;
     }
 
     public void export() throws Exception {
@@ -124,9 +130,36 @@ public class ExportProcessor {
             final JsonNode testSummary = entry.getKey();
             final ExportMeta meta = entry.getValue();
 
-            final TestResult testResult = new Allure2ExportFormatter().format(meta, testSummary);
-            final Path testSummaryPath = getResultFilePath(outputPath);
-            mapper.writeValue(testSummaryPath.toFile(), testResult);
+            final Allure2ExportFormatter formatter = new Allure2ExportFormatter().withExcludedRulesPath(excludedRulesPath);
+
+            final TestResult testResult = formatter.format(meta, testSummary);
+            final List<String> asIDs = new ArrayList<>();
+            for (final Label label : testResult.getLabels()) {
+                if (Objects.equals(label.getName(), AS_ID)) {
+                    asIDs.add(label.getValue());
+                }
+            }
+            if (asIDs.size() <= 1) {
+                final Path testSummaryPath = getResultFilePath(outputPath);
+                mapper.writeValue(testSummaryPath.toFile(), testResult);
+                testResults.put(testSummaryPath, testResult);
+            } else {
+                for (final String asID : asIDs) {
+                    final TestResult splitTestResult = formatter.format(meta, testSummary);
+                    final List<Label> labels = new ArrayList<>();
+                    for (final Label label : splitTestResult.getLabels()) {
+                        if (Objects.equals(label.getName(), AS_ID) && !Objects.equals(label.getValue(), asID)) {
+                            continue;
+                        }
+                        labels.add(label);
+                    }
+                    splitTestResult.setLabels(labels);
+
+                    final Path testSummaryPath = getResultFilePath(outputPath);
+                    mapper.writeValue(testSummaryPath.toFile(), splitTestResult);
+                    testResults.put(testSummaryPath, testResult);
+                }
+            }
 
             final Map<String, List<String>> attachmentSources = getAttachmentSources(testResult);
             final List<JsonNode> summaries = new ArrayList<>();
@@ -140,7 +173,6 @@ public class ExportProcessor {
                     }
                 });
             });
-            testResults.put(testSummaryPath, testResult);
         }
         System.out.printf("Export information about %s attachments...%n", attachmentsRefs.size());
         for (Map.Entry<String, String> attachment : attachmentsRefs.entrySet()) {

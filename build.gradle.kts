@@ -38,11 +38,12 @@ repositories {
 dependencies {
     annotationProcessor("info.picocli:picocli-codegen:4.1.4")
 
-    implementation("com.fasterxml.jackson.core:jackson-databind:2.10.2")
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.13.4.2")
     implementation("io.qameta.allure:allure-model:2.13.1")
     implementation("org.freemarker:freemarker:2.3.32")
     implementation("info.picocli:picocli:4.1.4")
-    implementation("commons-io:commons-io:2.6")
+    implementation("commons-io:commons-io:2.14.0")
+    implementation("com.googlecode.json-simple:json-simple:1.1.1")
 
-    testImplementation("junit:junit:4.12")
+    testImplementation("junit:junit:4.13.1")
 }
